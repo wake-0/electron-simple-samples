@@ -1,19 +1,19 @@
-const os = require('os')
-var chart = null;
-var lastMeasureTimes = [];
 
-function setLastMeasureTimes(cpus) {
+let chart = null;
+let lastMeasureTimes = [];
+let cpus = [];
+
+function setLastMeasureTimes() {
   for (let i = 0; i < cpus.length; i++) {
     lastMeasureTimes[i] = getCpuTimes(cpus[i]);
   }
 }
 
 function getDatasets() {
-  const datasets = []
-  const cpus = os.cpus()
+  const datasets = [];
 
   for (let i = 0; i < cpus.length; i++) {
-    const cpu = cpus[i]
+    const cpu = cpus[i];
     const cpuData = {
       data: getCpuTimes(cpu),
       backgroundColor: [
@@ -21,24 +21,11 @@ function getDatasets() {
         'rgba(54, 162, 235, 1)',
         'rgba(255, 206, 86, 1)'
       ]
-    }
-    datasets.push(cpuData)
+    };
+    datasets.push(cpuData);
   }
-  testCpus = os.cpus();
-  return datasets;
-}
 
-function updateDatasets() {
-  const cpus = os.cpus()
-  for (let i = 0; i < cpus.length; i++) {
-    const cpu = cpus[i]
-    chart.data.datasets[i].data = getCpuTimes(cpu);
-    chart.data.datasets[i].data[0] -= lastMeasureTimes[i][0];
-    chart.data.datasets[i].data[1] -= lastMeasureTimes[i][1];
-    chart.data.datasets[i].data[2] -= lastMeasureTimes[i][2];
-  }
-  chart.update();
-  setLastMeasureTimes(cpus);
+  return datasets;
 }
 
 function getCpuTimes(cpu) {
@@ -58,7 +45,7 @@ function drawChart() {
         'System Time (ms)',
         'Idle Time (ms)'
       ],
-      datasets: getDatasets()
+      datasets: getDatasets(cpus)
     },
     options: {
       maintainAspectRatio: false,
@@ -77,11 +64,26 @@ function drawChart() {
       }
     }
   });
-
-  setInterval(updateDatasets, 1000);
 }
 
-$(() => {
-  setLastMeasureTimes(os.cpus());
-  drawChart();
-})
+function updateDatasets() {
+  for (let i = 0; i < cpus.length; i++) {
+    const cpu = cpus[i];
+    chart.data.datasets[i].data = getCpuTimes(cpu);
+    chart.data.datasets[i].data[0] -= lastMeasureTimes[i][0];
+    chart.data.datasets[i].data[1] -= lastMeasureTimes[i][1];
+    chart.data.datasets[i].data[2] -= lastMeasureTimes[i][2];
+  }
+  chart.update();
+  setLastMeasureTimes();
+}
+
+window.api.onUpdateCpus((value) => {
+  cpus = value;
+  if (chart == null) {
+    setLastMeasureTimes();
+    drawChart();
+  }
+
+  updateDatasets();
+});

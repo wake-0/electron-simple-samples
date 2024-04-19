@@ -1,32 +1,24 @@
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
-const url = require('url')
+const {app, BrowserWindow} = require('electron');
+const path = require('node:path')
+const os = require('node:os');
 
-let window = null
-
-// Wait until the app is ready
-app.once('ready', () => {
-  // Create a new window
-  window = new BrowserWindow({
-    // Set the initial width to 500px
-    width: 500,
-    // Set the initial height to 400px
-    height: 400,
-    // set the title bar style
-    titleBarStyle: 'hiddenInset',
-    // set the background color to black
+const createWindow = () => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
     backgroundColor: "#111",
-    // Don't show the window until it's ready, this prevents any white flickering
-    show: false
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true
+    }
   })
 
-  window.loadURL(url.format({
-    pathname: path.join(__dirname, 'index.html'),
-    protocol: 'file:',
-    slashes: true
-  }))
+  win.loadFile('index.html');
 
-  window.once('ready-to-show', () => {
-    window.show()
-  })
+  // Update the values of the CPUs every second
+  setInterval(() => win.webContents.send('update-cpus', os.cpus()), 1000);
+}
+
+app.whenReady().then(() => {
+  createWindow();
 })
